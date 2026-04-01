@@ -2,93 +2,80 @@ from __future__ import annotations
 
 from sqlalchemy import create_engine, text
 
-from src.config import DB_PATH
+DB_PATH = "sqlite:///data/cricket.db"
+engine = create_engine(DB_PATH)
 
-engine = create_engine(f"sqlite:///{DB_PATH}")
 
-
-def create_tables() -> None:
+def create_tables():
     with engine.begin() as conn:
-        conn.execute(
-            text(
-                """
-                CREATE TABLE IF NOT EXISTS matches (
-                    match_id TEXT PRIMARY KEY,
-                    raw_series_name TEXT,
-                    competition TEXT,
-                    season_label TEXT,
-                    match_date TEXT,
-                    match_type TEXT,
-                    team_1 TEXT,
-                    team_2 TEXT,
-                    venue TEXT,
-                    result_text TEXT,
-                    status TEXT
-                )
-                """
-            )
-        )
+        conn.execute(text("PRAGMA foreign_keys = ON;"))
 
-        conn.execute(
-            text(
-                """
-                CREATE TABLE IF NOT EXISTS innings (
-                    innings_id TEXT PRIMARY KEY,
-                    match_id TEXT NOT NULL,
-                    innings_number INTEGER,
-                    batting_team TEXT,
-                    bowling_team TEXT,
-                    runs INTEGER,
-                    wickets INTEGER,
-                    overs REAL,
-                    target INTEGER,
-                    run_rate REAL,
-                    FOREIGN KEY(match_id) REFERENCES matches(match_id)
-                )
-                """
-            )
-        )
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS matches (
+                match_id TEXT PRIMARY KEY,
+                raw_series_name TEXT,
+                competition TEXT,
+                season_label TEXT,
+                match_date TEXT,
+                match_type TEXT,
+                team_1 TEXT,
+                team_2 TEXT,
+                venue TEXT,
+                result_text TEXT,
+                status TEXT
+            );
+        """))
 
-        conn.execute(
-            text(
-                """
-                CREATE TABLE IF NOT EXISTS batting_scorecard (
-                    batting_id TEXT PRIMARY KEY,
-                    match_id TEXT NOT NULL,
-                    innings_number INTEGER,
-                    player_name TEXT,
-                    team TEXT,
-                    runs INTEGER,
-                    balls INTEGER,
-                    fours INTEGER,
-                    sixes INTEGER,
-                    strike_rate REAL,
-                    dismissal TEXT,
-                    FOREIGN KEY(match_id) REFERENCES matches(match_id)
-                )
-                """
-            )
-        )
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS innings (
+                innings_id TEXT PRIMARY KEY,
+                match_id TEXT NOT NULL,
+                innings_number INTEGER NOT NULL,
+                batting_team TEXT,
+                bowling_team TEXT,
+                runs INTEGER,
+                wickets INTEGER,
+                overs REAL,
+                target INTEGER,
+                run_rate REAL,
+                FOREIGN KEY (match_id) REFERENCES matches(match_id)
+            );
+        """))
 
-        conn.execute(
-            text(
-                """
-                CREATE TABLE IF NOT EXISTS bowling_scorecard (
-                    bowling_id TEXT PRIMARY KEY,
-                    match_id TEXT NOT NULL,
-                    innings_number INTEGER,
-                    player_name TEXT,
-                    team TEXT,
-                    overs REAL,
-                    maidens INTEGER,
-                    runs_conceded INTEGER,
-                    wickets INTEGER,
-                    economy REAL,
-                    FOREIGN KEY(match_id) REFERENCES matches(match_id)
-                )
-                """
-            )
-        )
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS batting_scorecard (
+                batting_id TEXT PRIMARY KEY,
+                match_id TEXT NOT NULL,
+                innings_number INTEGER NOT NULL,
+                player_name TEXT,
+                team TEXT,
+                runs INTEGER,
+                balls INTEGER,
+                fours INTEGER,
+                sixes INTEGER,
+                strike_rate REAL,
+                dismissal TEXT,
+                FOREIGN KEY (match_id) REFERENCES matches(match_id)
+            );
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS bowling_scorecard (
+                bowling_id TEXT PRIMARY KEY,
+                match_id TEXT NOT NULL,
+                innings_number INTEGER NOT NULL,
+                player_name TEXT,
+                team TEXT,
+                overs REAL,
+                maidens INTEGER,
+                runs_conceded INTEGER,
+                wickets INTEGER,
+                economy REAL,
+                FOREIGN KEY (match_id) REFERENCES matches(match_id)
+            );
+        """))
+
+    print("Tables created successfully.")
 
 
 def load_matches(rows: list[dict]) -> None:
@@ -98,8 +85,7 @@ def load_matches(rows: list[dict]) -> None:
     with engine.begin() as conn:
         for row in rows:
             conn.execute(
-                text(
-                    """
+                text("""
                     INSERT INTO matches (
                         match_id,
                         raw_series_name,
@@ -137,8 +123,7 @@ def load_matches(rows: list[dict]) -> None:
                         venue = excluded.venue,
                         result_text = excluded.result_text,
                         status = excluded.status
-                    """
-                ),
+                """),
                 row,
             )
 
@@ -150,8 +135,7 @@ def load_innings(rows: list[dict]) -> None:
     with engine.begin() as conn:
         for row in rows:
             conn.execute(
-                text(
-                    """
+                text("""
                     INSERT INTO innings (
                         innings_id,
                         match_id,
@@ -184,8 +168,7 @@ def load_innings(rows: list[dict]) -> None:
                         overs = excluded.overs,
                         target = excluded.target,
                         run_rate = excluded.run_rate
-                    """
-                ),
+                """),
                 row,
             )
 
@@ -197,8 +180,7 @@ def load_batting_scorecard(rows: list[dict]) -> None:
     with engine.begin() as conn:
         for row in rows:
             conn.execute(
-                text(
-                    """
+                text("""
                     INSERT INTO batting_scorecard (
                         batting_id,
                         match_id,
@@ -234,8 +216,7 @@ def load_batting_scorecard(rows: list[dict]) -> None:
                         sixes = excluded.sixes,
                         strike_rate = excluded.strike_rate,
                         dismissal = excluded.dismissal
-                    """
-                ),
+                """),
                 row,
             )
 
@@ -247,8 +228,7 @@ def load_bowling_scorecard(rows: list[dict]) -> None:
     with engine.begin() as conn:
         for row in rows:
             conn.execute(
-                text(
-                    """
+                text("""
                     INSERT INTO bowling_scorecard (
                         bowling_id,
                         match_id,
@@ -281,7 +261,6 @@ def load_bowling_scorecard(rows: list[dict]) -> None:
                         runs_conceded = excluded.runs_conceded,
                         wickets = excluded.wickets,
                         economy = excluded.economy
-                    """
-                ),
+                """),
                 row,
             )
