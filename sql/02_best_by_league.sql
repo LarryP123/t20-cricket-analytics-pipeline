@@ -1,4 +1,5 @@
 SELECT
+    competition,
     player_name,
     innings,
     total_runs,
@@ -6,7 +7,5 @@ SELECT
     strike_rate,
     batting_index
 FROM player_metrics
-WHERE innings >= 10
-  AND total_runs >= 350
-ORDER BY total_runs DESC, avg_runs DESC, strike_rate DESC
-LIMIT 15;
+WHERE innings >= 6
+ORDER BY competition, batting_index DESC;

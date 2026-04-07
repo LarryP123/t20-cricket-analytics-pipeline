@@ -24,6 +24,26 @@ TARGET_COMPETITIONS = {
         "season_patterns": ["2024-25"],
         "season_label": "2024-25",
     },
+    "BPL": {
+        "keywords": ["bangladesh premier league"],
+        "season_patterns": ["2024-25"],
+        "season_label": "2024-25",
+    },
+    "LPL": {
+        "keywords": ["lanka premier league"],
+        "season_patterns": ["2024"],
+        "season_label": "2024",
+    },
+    "PSL": {
+        "keywords": ["pakistan super league"],
+        "season_patterns": ["2024"],
+        "season_label": "2024",
+    },
+    "SA20": {
+        "keywords": ["sa20"],
+        "season_patterns": ["2025"],
+        "season_label": "2025",
+    },
 }
 
 DB_PATH = "data/cricket.db"

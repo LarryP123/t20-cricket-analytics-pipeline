@@ -1,6 +1,5 @@
 from src.extract import (
     get_series,
-    filter_target_series,
     get_matches_from_series_info,
     get_match_scorecard,
 )
@@ -14,22 +13,64 @@ from src.load import (
 from src.transform import get_competition_metadata, parse_scorecard
 
 
-def run():
-    searches = [
-        "Indian Premier League",
-        "Big Bash League",
-        "Caribbean Premier League",
-    ]
+TARGET_SERIES_NAMES = {
+    "Indian Premier League 2025 (IPL)",
+    "Big Bash League 2024-25",
+    "Caribbean Premier League 2025",
+    "Bangladesh Premier League, 2024-25",
+    "Lanka Premier League, 2024",
+    "Pakistan Super League, 2024",
+    "SA20, 2025",
+}
 
+SEARCH_TERMS = [
+    "Indian Premier League",
+    "Big Bash League",
+    "Caribbean Premier League",
+    "Bangladesh Premier League",
+    "Lanka Premier League",
+    "Pakistan Super League",
+    "SA20",
+]
+
+
+def collect_target_series():
     all_series = []
 
-    for term in searches:
-        results = get_series(term)
-        all_series.extend(results)
+    for term in SEARCH_TERMS:
+        try:
+            results = get_series(term)
+            all_series.extend(results)
+        except Exception:
+            pass  # silent fail
 
-    filtered_series = filter_target_series(all_series)
+    unique_series = {}
+    for series in all_series:
+        series_id = series.get("id")
+        if series_id:
+            unique_series[series_id] = series
 
-    print("\nFetching matches for selected series...\n")
+    deduped_series = list(unique_series.values())
+
+    filtered_series = [
+        series
+        for series in deduped_series
+        if series.get("name") in TARGET_SERIES_NAMES
+    ]
+
+    print(f"\nSeries selected: {len(filtered_series)}")
+
+    return filtered_series
+
+
+def run():
+    filtered_series = collect_target_series()
+
+    if not filtered_series:
+        print("No target series found. Check API key or names.")
+        return
+
+    print("\nFetching data...\n")
 
     match_rows = []
     innings_rows = []
@@ -40,10 +81,13 @@ def run():
         series_id = series.get("id")
         series_name = series.get("name", "")
 
-        print(f"Fetching: {series_name}")
+        try:
+            matches = get_matches_from_series_info(series_id)
+        except Exception:
+            print(f"Failed to fetch matches: {series_name}")
+            continue
 
-        matches = get_matches_from_series_info(series_id)
-        print(f" → Found {len(matches)} matches")
+        print(f"{series_name}: {len(matches)} matches")
 
         metadata = get_competition_metadata(series_name)
 
@@ -75,26 +119,25 @@ def run():
                     match_id,
                     scorecard_data,
                     team_1,
-                    team_2,                   
+                    team_2,
                 )
 
                 innings_rows.extend(parsed_innings)
                 batting_rows.extend(parsed_batting)
                 bowling_rows.extend(parsed_bowling)
 
-                print(
-                    f"   → Scorecard parsed: "
-                    f"{len(parsed_innings)} innings, "
-                    f"{len(parsed_batting)} batting rows, "
-                    f"{len(parsed_bowling)} bowling rows"
-                )
-            except Exception as exc:
-                print(f"   → Skipped scorecard for {match_id}: {exc}")
+            except Exception:
+                continue  # silently skip bad scorecards
 
-    print(f"\nTotal matches collected: {len(match_rows)}")
-    print(f"Total innings collected: {len(innings_rows)}")
-    print(f"Total batting rows collected: {len(batting_rows)}")
-    print(f"Total bowling rows collected: {len(bowling_rows)}")
+    print("\nData summary:")
+    print(f"Matches: {len(match_rows)}")
+    print(f"Innings: {len(innings_rows)}")
+    print(f"Batting rows: {len(batting_rows)}")
+    print(f"Bowling rows: {len(bowling_rows)}")
+
+    if not match_rows:
+        print("No data collected. Stopping.")
+        return
 
     create_tables()
     load_matches(match_rows)
@@ -102,7 +145,7 @@ def run():
     load_batting_scorecard(batting_rows)
     load_bowling_scorecard(bowling_rows)
 
-    print("All data loaded into SQLite.")
+    print("\nData successfully loaded into SQLite.")
 
 
 if __name__ == "__main__":

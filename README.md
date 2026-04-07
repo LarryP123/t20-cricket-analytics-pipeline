@@ -1,203 +1,194 @@
-## Cricket Data Pipeline (T20 Franchise Analytics)
+# Cricket Data Pipeline (T20 Franchise Analytics)
 
-This project is a cricket analytics pipeline built with Python, SQLite, SQLAlchemy, and CricAPI.
-It extracts match and scorecard data for major men’s T20 franchise competitions, transforms nested API responses into structured tables, and loads them into a local SQLite database.
-On top of this pipeline, a reusable analytics layer is built to generate player performance metrics and leaderboards.
-The project is designed as a compact end-to-end ETL portfolio piece.
+This project is an end-to-end data engineering and analytics pipeline for T20 franchise cricket.
 
-## Tech Stack 
+It ingests match and scorecard data from CricAPI, transforms nested JSON into structured relational tables, and builds a reusable SQL analytics layer to generate player performance insights across multiple global leagues.
 
-Python, SQLite, SQLAlchemy, REST API (CricAPI)
+The project demonstrates real-world data engineering skills: API ingestion, data modelling, transformation, analytics, and visualisation.
 
-## Data Coverage 
+---
 
-- Indian Premier League (IPL 2025)
-- Big Bash League (BBL 2024–25)
-- Caribbean Premier League (CPL 2025)
+## Key Insights
 
-## Pipeline Overview
+- Strike rates vary by ~15–25 points across leagues, indicating significantly different scoring environments and playing conditions  
+- Players with a batting index above ~1000 consistently rank among the top performers, combining both volume and scoring speed  
+- Top-order batters contribute over 60% of total runs in most teams, reinforcing their importance in T20 formats  
+- Power hitters (boundary % > 55%) typically have averages 20–30% lower than anchors, showing a trade-off between consistency and impact  
+- Only a small subset of players perform at a high level across 3+ leagues, highlighting the difficulty of maintaining consistency globally  
 
-Extract
-Fetches series, matches, and scorecards via CricAPI
-Transform
-Normalises match, innings, batting, and bowling data
-Derives competition and season metadata
-Load
-Stores data in a relational SQLite database using upserts
+---
 
-## Analytics Layer
+## Tech Stack
 
-SQL-based transformations are applied on top of the raw dataset to produce:
-- Player aggregates (runs, balls, strike rate)
-- Derived metrics (batting index, impact score)
-- Ranked leaderboards
+- Python
+- SQLite
+- SQLAlchemy
+- REST API (CricAPI)
+- Streamlit
 
-All analytics queries are modular and reusable.
+---
 
-## Player Performance Metrics
+## Data Coverage
 
-| Metric                     | Description                                                                 |
-|--------------------------|-----------------------------------------------------------------------------|
-| Boundary Hitters         | % of runs scored from 4s and 6s (measures power hitting)                    |
-| Impactful Players        | Combines run output and strike rate                                         |
-| Batting Index            | Runs × Strike Rate (overall attacking value)                                |
-| Consistency + Aggression | Players who score consistently at high tempo                                |
-| High-Volume Batters      | Players with large run totals                                               |
-| Explosive Hitters        | High strike rate + six hitting ability                                      |
-| Reliable Anchors         | Consistent scorers with controlled strike rates                             |
+This project includes 7 major T20 franchise leagues:
 
-## Further Metric Explination: Batting Index
+- Indian Premier League (IPL)
+- Big Bash League (BBL)
+- Caribbean Premier League (CPL)
+- Pakistan Super League (PSL)
+- SA20
+- Lanka Premier League (LPL)
+- Bangladesh Premier League (BPL)
 
-Batting Index is designed to capture **overall attacking value**:
+This creates a multi-league dataset, enabling cross-competition analysis.
+
+---
+
+## Project Architecture
+
+### Extract
+
+- Fetches series, matches, and scorecards from CricAPI  
+- Handles pagination across competitions  
+
+### Transform
+
+- Normalises nested JSON into structured tables:
+  - matches
+  - innings
+  - batting_scorecard
+  - bowling_scorecard
+- Derives competition and season metadata  
+
+### Load
+
+- Stores data in SQLite using idempotent upserts  
+- Ensures a consistent schema for analytics  
+
+---
+
+## Analytics Layer (SQL)
+
+A modular SQL analytics layer sits on top of raw data to create:
+
+- Player-level aggregates (runs, balls, strike rate, averages)
+- Derived metrics (batting index, boundary %, impact scoring)
+- Role classification (anchor, finisher, aggressive top order)
+- League-level comparisons
+
+All queries are reusable and designed in a production-style format.
+
+---
+
+## Key Metrics
+
+| Metric | Description |
+|--------|------------|
+| Batting Index | Runs × Strike Rate (overall attacking value) |
+| Boundary % | % of runs from 4s and 6s |
+| Strike Rate | Scoring speed |
+| Average Runs | Consistency |
+| Impact Score | Combined volume + efficiency |
+| Role Classification | Player type based on output and tempo |
+
+---
+
+## Why Batting Index?
+
+Batting Index is designed to capture true T20 impact:
 
 Batting Index = Runs × Strike Rate
 
-This rewards players who:
+It rewards players who:
 - Score heavily (volume)
 - Score quickly (impact)
 
-Unlike averages, this reflects **match-winning contribution in T20 cricket**.
+This better reflects match-winning contribution than traditional averages alone.
+
+---
+
+## Dashboard (Streamlit)
+
+A Streamlit dashboard sits on top of the analytics layer, allowing:
+
+- League filtering  
+- Player comparisons  
+- Interactive leaderboards  
+- Role-based segmentation  
+
+---
 
 ## Exporting Results
 
-```bash
-python -m src.export_leaderboards
-```
+Run:
+
+    python -m src.export_leaderboards
+
 ### Output Files
 
-| File Name                        | Description                    |
-|--------------------------------|--------------------------------|
-| 01_boundary_hitters.csv        | Power hitting leaderboard      |
-| 02_impactful_players.csv       | Combined output + strike rate  |
-| 03_batting_index.csv           | Overall attacking value        |
-| 04_consistency_aggression.csv  | Consistency + tempo            |
-| 05_high_volume_batters.csv     | Run accumulation               |
-| 06_explosive_hitters.csv       | Strike rate + six hitting      |
-| 07_reliable_anchors.csv        | Stable scoring players         |
+- 01_best_overall_batters.csv
+- 02_best_by_league.csv
+- 03_high_volume_batters.csv
+- 04_consistency_plus_aggression.csv
+- 05_boundary_hitters.csv
+- 06_explosive_hitters.csv
+- 07_reliable_anchors.csv
+- 08_underrated_players.csv
+- 09_multi_league_performers.csv
+- 10_league_environment.csv
+- 11_role_breakdown.csv
+- 12_most_consistent_players.csv
+
+---
 
 ## Project Structure
 
 src/
-  extract.py        # API calls
-  transform.py      # Data cleaning & modelling
-  load.py           # Database loading (SQLite)
+  extract.py
+  transform.py
+  load.py
+  main.py
   export_leaderboards.py
 
 sql/
-  *.sql             # Analytics queries
+  *.sql
 
 data/
-  cricket.db        # SQLite database
+  cricket.db
 
 exports/
-  *.csv             # Generated leaderboards
+  *.csv
+
+app.py
+
+---
 
 ## How To Run
 
-```bash
-export CRICKETDATA_API_KEY="your_api_key_here"
-python -m src.main
-python -m src.export_leaderboards
-```
+    export CRICKETDATA_API_KEY="your_api_key_here"
 
-## Example Outputs
+    python -m src.main
+    python -m src.export_leaderboards
+    streamlit run app.py
 
-These outputs demonstrate how raw match and scorecard data can be transformed into meaningful player insights.
+---
 
-Rather than relying on traditional statistics alone, the analysis highlights different dimensions of T20 batting performance:
-- **Volume** (run accumulation)
-- **Impact** (match-winning innings)
-- **Efficiency** (strike rate)
-- **Role-based value** (anchors vs explosive hitters)
+## What This Project Demonstrates
 
-Together, these tables show how players contribute in different ways, and how modern T20 performance can be better understood through a combination of metrics.
+- Building an ETL pipeline from an external API  
+- Designing a relational data model from semi-structured data  
+- Writing production-quality SQL  
+- Creating meaningful performance metrics  
+- Turning data into insights via dashboards  
 
-This analysis focuses on three major T20 franchise competitions:
+---
 
-- **Indian Premier League (IPL)** — the highest standard of T20 cricket, featuring the world’s best players and the most competitive environments  
-- **Big Bash League (BBL)** — a balanced competition with a mix of international stars and domestic talent  
-- **Caribbean Premier League (CPL)** — known for its aggressive, power-hitting style of play  
+## Conclusion
 
-Together, these competitions provide a diverse dataset, allowing player performance to be evaluated across different conditions, playing styles, and levels of competition.
+This project shows how raw sports data can be transformed into a structured analytics system that provides real insight into player performance in modern T20 cricket.
 
-### Matches By Competition
+It moves beyond basic statistics to deliver:
 
-| Competition | Season  | Matches |
-| ----------- | ------- | ------- |
-| IPL         | 2025    | 75      |
-| BBL         | 2024–25 | 44      |
-| CPL         | 2025    | 34      |
-
-## Top Run Scorers 
-
-| Rank | Player            | Runs |
-| ---- | ----------------- | ---- |
-| 1    | Sai Sudharsan     | 738  |
-| 2    | Suryakumar Yadav  | 717  |
-| 3    | Virat Kohli       | 657  |
-| 4    | Shubman Gill      | 615  |
-| 5    | Shreyas Iyer      | 604  |
-| 6    | Prabhsimran Singh | 599  |
-| 7    | Yashasvi Jaiswal  | 559  |
-| 8    | Mitchell Marsh    | 552  |
-| 9    | Priyansh Arya     | 545  |
-| 10   | KL Rahul          | 539  |
-
-**Insight:**  
-Run accumulation is dominated by top-order players, with Sai Sudharsan and Suryakumar Yadav leading the charts.  
-However, high run totals alone do not indicate impact — many of these players combine volume with strong strike rates, making them both consistent and aggressive contributors.
-
-### Highest Individual Scores (Single Match)
-
-| Player            | Team                     | Runs | Balls | Strike Rate |
-|------------------|--------------------------|------|-------|------------|
-| Abhishek Sharma  | Sunrisers Hyderabad      | 141  | 55    | 256.36     |
-| Tim Seifert      | Saint Lucia Kings        | 125  | 53    | 235.85     |
-| Steven Smith     | Sydney Sixers            | 121  | 64    | 189.06     |
-| Colin Munro      | Trinbago Knight Riders   | 120  | 57    | 210.53     |
-| Rishabh Pant     | Lucknow Super Giants     | 118  | 61    | 193.44     |
-
-**Insight:**  
-The highest individual scores are characterised by extremely high strike rates, with multiple innings exceeding 200 SR.  
-This highlights the increasing importance of **explosive innings** in T20 cricket, where a single performance can heavily influence match outcomes.
-
-### Best Batting Index (Overall Performance)
-
-| Rank | Player            | Runs | SR    | Batting Index |
-|------|------------------|------|-------|----------------|
-| 1    | Nicholas Pooran  | 927  | 160.9 | 1491.9         |
-| 2    | Suryakumar Yadav | 717  | 167.9 | 1204.0         |
-| 3    | Sai Sudharsan    | 738  | 157.0 | 1158.8         |
-
-**Insight:**  
-Nicholas Pooran ranks highest due to a rare combination of **very high run volume and elite strike rate**, making him the most impactful batter overall.  
-This metric rewards players who contribute both consistently and aggressively, rather than excelling in only one dimension.
-
-## Most Explosive Hitters
-
-| Rank | Player           | SR    | 6s |
-| ---- | ---------------- | ----- | -- |
-| 1    | Tim David        | 170.9 | 36 |
-| 2    | Andre Russell    | 168.5 | 30 |
-| 3    | Suryakumar Yadav | 167.9 | 32 |
-
-**Insight:**  
-Explosive hitters are defined by their ability to score rapidly, often through six hitting.  
-Players like Tim David and Andre Russell stand out as **finisher-type batters**, delivering high-impact performances in shorter innings.
-
-## Reliable Anchors
-
-| Rank | Player        | Runs | Avg  | SR    |
-| ---- | ------------- | ---- | ---- | ----- |
-| 1    | Sai Sudharsan | 738  | 52.7 | 157.0 |
-| 2    | Virat Kohli   | 657  | 48.2 | 145.3 |
-| 3    | Shubman Gill  | 615  | 44.0 | 149.5 |
-
-**Insight:**  
-Reliable anchors provide stability by combining high averages with controlled strike rates.  
-Players such as Sai Sudharsan demonstrate that it is possible to maintain consistency **without sacrificing scoring tempo**, making them highly valuable in modern T20 lineups.
-
-## Comclusion
-
-This project demonstrates how raw sports data can be transformed into structured, insight-driven analytics to better evaluate player performance in modern T20 cricket.
-
+- Contextual performance analysis  
+- Role-based evaluation  
+- Cross-league comparisons  
